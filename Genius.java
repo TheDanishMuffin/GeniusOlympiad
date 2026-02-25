@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import java.util.Map;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
@@ -15,10 +16,14 @@ public class Genius extends LinearOpMode {
         DcMotor backLeft = hardwareMap.get(DcMotor.class, "backLeft");
         DcMotor frontRight = hardwareMap.get(DcMotor.class, "frontRight");
         DcMotor backRight = hardwareMap.get(DcMotor.class, "backRight");
+        DcMotor intake = hardwareMap.get(DcMotor.class, "intake");
+        
+        DcMotor fly1 = hardware.Map.get(DcMotor.class, "flywheel");
 
         // Reverse the left side motors so driving "forward" makes all wheels spin the same way
         frontLeft.setDirection(DcMotorSimple.Direction.REVERSE);
         backLeft.setDirection(DcMotorSimple.Direction.REVERSE);
+        
 
         waitForStart();
 
@@ -30,6 +35,9 @@ public class Genius extends LinearOpMode {
             double rawY = -gamepad1.left_stick_y; // Forward/Backward
             double rawX = gamepad1.left_stick_x;  // Strafing Left/Right
             double rawRx = gamepad1.right_stick_x; // Turning
+            boolean iny = gamepad1.a; 
+            
+
 
             // 3. Cube the inputs for minute movement control
             double y = Math.pow(rawY, 3);
@@ -48,6 +56,7 @@ public class Genius extends LinearOpMode {
             backLeft.setPower(backLeftPower);
             frontRight.setPower(frontRightPower);
             backRight.setPower(backRightPower);
+            intake.setPower(1);
         }
     }
 }
