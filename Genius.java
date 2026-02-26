@@ -59,7 +59,7 @@ public class Genius extends LinearOpMode {
 
             //adjust speeds here
             intake.setPower(1);
-            fly1.setPower(0.2)
+            fly1.setPower(0.2);
         }
     }
 }
