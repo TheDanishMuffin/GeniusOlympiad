@@ -17,8 +17,7 @@ public class Genius extends LinearOpMode {
         DcMotor frontRight = hardwareMap.get(DcMotor.class, "frontRight");
         DcMotor backRight = hardwareMap.get(DcMotor.class, "backRight");
         DcMotor intake = hardwareMap.get(DcMotor.class, "intake");
-        
-        DcMotor fly1 = hardware.Map.get(DcMotor.class, "flywheel");
+        DcMotor fly1 = hardwareMap.get(DcMotor.class, "flywheel");
 
         // Reverse the left side motors so driving "forward" makes all wheels spin the same way
         frontLeft.setDirection(DcMotorSimple.Direction.REVERSE);
