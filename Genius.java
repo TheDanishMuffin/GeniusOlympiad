@@ -56,7 +56,10 @@ public class Genius extends LinearOpMode {
             backLeft.setPower(backLeftPower);
             frontRight.setPower(frontRightPower);
             backRight.setPower(backRightPower);
+
+            //adjust speeds here
             intake.setPower(1);
+            fly1.setPower(0.2)
         }
     }
 }
