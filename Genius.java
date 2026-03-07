@@ -34,6 +34,7 @@ public class Genius extends LinearOpMode {
 
         // --- NEW VARIABLES FOR TOGGLE LOGIC ---
         boolean rackTesterOn = false; // Tracks if the motor should be running
+        boolean intakeOn = false;
         boolean lastBButtonState = false; // Tracks the button's state in the previous loop
         // --------------------------------------
 
@@ -60,6 +61,21 @@ public class Genius extends LinearOpMode {
                 rackTester.setPower(0);  // Stops when toggled OFF
             }
             // -------------------------------------------------------------
+            boolean currentBButtonState = gamepad1.x; // You can change 'b' to 'a', 'x', or 'y' if you prefer
+            
+            // If the button is pressed down NOW, but wasn't pressed in the last microsecond:
+            if (currentBButtonState && !lastBButtonState) {
+                intakeOn = !intakeOn; // Flip the state! (Off becomes On, On becomes Off)
+            }
+            lastBButtonState = currentBButtonState; // Save the current state for the next loop
+
+            // Apply the power based on our toggle state
+            if (intakeOn) {
+                rackTester.setPower(1); // Runs when toggled ON
+            } else {
+                rackTester.setPower(0);  // Stops when toggled OFF
+            }
+            // -------------------------------------------------------------
 
             // 3. Cube the inputs for minute movement control
             double y = Math.pow(rawY, 3);
@@ -80,7 +96,7 @@ public class Genius extends LinearOpMode {
             backRight.setPower(backRightPower);
             boot1.setPower(-1);
             boot2.setPower(1);
-            intake.setPower(1);
+            // intake.setPower(1);
         }
     }
 }
