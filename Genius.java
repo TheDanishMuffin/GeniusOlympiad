@@ -1,7 +1,6 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import java.util.Map;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
@@ -29,20 +28,38 @@ public class Genius extends LinearOpMode {
         frontLeft.setDirection(DcMotorSimple.Direction.REVERSE);
         backLeft.setDirection(DcMotorSimple.Direction.REVERSE);
         
-
         waitForStart();
 
         if (isStopRequested()) return;
 
+        // --- NEW VARIABLES FOR TOGGLE LOGIC ---
+        boolean rackTesterOn = false; // Tracks if the motor should be running
+        boolean lastBButtonState = false; // Tracks the button's state in the previous loop
+        // --------------------------------------
+
         while (opModeIsActive()) {
             // 2. Get the raw joystick inputs
-            // Note: pushing the stick forward gives a negative Y value, so we reverse it with a minus sign
             double rawY = -gamepad1.left_stick_y; // Forward/Backward
             double rawX = gamepad1.left_stick_x;  // Strafing Left/Right
             double rawRx = gamepad1.right_stick_x; // Turning
             boolean iny = gamepad1.a; 
             
+            // --- RACK TESTER TOGGLE LOGIC (Using Gamepad 1 'B' Button) ---
+            boolean currentBButtonState = gamepad1.b; // You can change 'b' to 'a', 'x', or 'y' if you prefer
+            
+            // If the button is pressed down NOW, but wasn't pressed in the last microsecond:
+            if (currentBButtonState && !lastBButtonState) {
+                rackTesterOn = !rackTesterOn; // Flip the state! (Off becomes On, On becomes Off)
+            }
+            lastBButtonState = currentBButtonState; // Save the current state for the next loop
 
+            // Apply the power based on our toggle state
+            if (rackTesterOn) {
+                rackTester.setPower(-1); // Runs when toggled ON
+            } else {
+                rackTester.setPower(0);  // Stops when toggled OFF
+            }
+            // -------------------------------------------------------------
 
             // 3. Cube the inputs for minute movement control
             double y = Math.pow(rawY, 3);
@@ -56,7 +73,7 @@ public class Genius extends LinearOpMode {
             double frontRightPower = (y - x - rx) / denominator;
             double backRightPower = (y + x - rx) / denominator;
 
-            // 5. Send the power to the Yellow Jacket motors
+            // 5. Send the power to the motors
             frontLeft.setPower(frontLeftPower);
             backLeft.setPower(backLeftPower);
             frontRight.setPower(frontRightPower);
@@ -64,7 +81,6 @@ public class Genius extends LinearOpMode {
             boot1.setPower(-1);
             boot2.setPower(1);
             intake.setPower(1);
-            rackTester.setPower(-1);
         }
     }
 }
