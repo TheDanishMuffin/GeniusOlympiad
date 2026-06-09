@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
@@ -24,15 +25,16 @@ public class Genius extends LinearOpMode {
         DcMotor backRight  = hardwareMap.get(DcMotor.class, "backRight");
 
         // Mechanism motors
-        // DcMotor intake     = hardwareMap.get(DcMotor.class, "intake");
+        DcMotor intake     = hardwareMap.get(DcMotor.class, "intake");
+        Servo kicker = hardwareMap.get(Servo.class, "kicker");
         // DcMotor boot1      = hardwareMap.get(DcMotor.class, "boot1");
         // DcMotor boot2      = hardwareMap.get(DcMotor.class, "boot2");
         // DcMotor rackTester = hardwareMap.get(DcMotor.class, "rackTester");
         // DcMotor fly1 = hardwareMap.get(DcMotor.class, "flywheel");
 
         // Odometry encoders (wired through motor ports)
-        DcMotor encoderX = hardwareMap.get(DcMotor.class, "encoderX");
-        DcMotor encoderY = hardwareMap.get(DcMotor.class, "encoderY");
+        // DcMotor encoderX = hardwareMap.get(DcMotor.class, "encoderX");
+        // DcMotor encoderY = hardwareMap.get(DcMotor.class, "encoderY");
 
         // IMU
         IMU imu = hardwareMap.get(IMU.class, "imu");
@@ -41,12 +43,13 @@ public class Genius extends LinearOpMode {
         // Reverse the left side so "forward" spins all wheels the same way
         frontLeft.setDirection(DcMotorSimple.Direction.REVERSE);
         backLeft.setDirection(DcMotorSimple.Direction.REVERSE);
+        kicker.setPosition(0.0);
 
         // Reset and free-run the odometry encoders
-        encoderX.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        encoderY.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        encoderX.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        encoderY.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        // encoderX.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        // encoderY.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        // encoderX.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        // encoderY.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
         // Initialize the IMU
         IMU.Parameters parameters = new IMU.Parameters(
@@ -105,13 +108,22 @@ public class Genius extends LinearOpMode {
             // --- 8. Run the mechanism motors ---
             // boot1.setPower(-1);
             // boot2.setPower(1);
-            // intake.setPower(1);
+            intake.setPower(-.45);
+            if(iny)
+            {
+                kicker.setPosition(0.5); // Kick position
 
-            // --- 9. Read odometry + IMU for telemetry ---
-            int xPos = encoderX.getCurrentPosition();
-            int yPos = encoderY.getCurrentPosition();
-            double xInches = xPos / COUNTS_PER_INCH;
-            double yInches = yPos / COUNTS_PER_INCH;
+            }
+            else
+            {
+                kicker.setPosition(0.0); // reset position
+            }
+
+            // // --- 9. Read odometry + IMU for telemetry ---
+            // int xPos = encoderX.getCurrentPosition();
+            // int yPos = encoderY.getCurrentPosition();
+            // double xInches = xPos / COUNTS_PER_INCH;
+            // double yInches = yPos / COUNTS_PER_INCH;
 
             YawPitchRollAngles angles = imu.getRobotYawPitchRollAngles();
             double heading = angles.getYaw(AngleUnit.DEGREES);
@@ -119,8 +131,8 @@ public class Genius extends LinearOpMode {
             // --- 10. Telemetry ---
             // telemetry.addData("X Counts", yPos); //swapped x and y here these
             // telemetry.addData("Y Counts", xPos);
-            telemetry.addData("X Inches", "%.2f", -yInches);
-            telemetry.addData("Y Inches", "%.2f", xInches);
+            // telemetry.addData("X Inches", "%.2f", -yInches);
+            // telemetry.addData("Y Inches", "%.2f", xInches);
             telemetry.addData("Heading (deg)", "%.1f", heading);
             telemetry.addData("Button A", iny);
             // telemetry.addData("Rack Tester", rackTesterOn ? "ON" : "OFF");
