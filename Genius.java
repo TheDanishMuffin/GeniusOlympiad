@@ -43,7 +43,7 @@ public class Genius extends LinearOpMode {
         // Reverse the left side so "forward" spins all wheels the same way
         frontLeft.setDirection(DcMotorSimple.Direction.REVERSE);
         backLeft.setDirection(DcMotorSimple.Direction.REVERSE);
-        kicker.setPosition(0.0);
+        kicker.setPosition(0.5);
 
         // Reset and free-run the odometry encoders
         // encoderX.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -70,13 +70,16 @@ public class Genius extends LinearOpMode {
         // --- Toggle state tracking for the rack tester ---
         // boolean rackTesterOn = false;     // Whether the motor should be running
         boolean lastBButtonState = false; // Button state from the previous loop
+        
+        // --- Toggle state tracking for the kicker ---
+        boolean kickerActive = false;     // Tracks if the kicker should be out
+        boolean lastAButtonState = false; // Tracks the 'A' button state from the previous loop
 
         while (opModeIsActive()) {
             // --- 3. Read raw joystick inputs ---
             double rawY  = -gamepad1.left_stick_y;  // Forward/Backward
             double rawX  = gamepad1.left_stick_x;   // Strafing Left/Right
             double rawRx = gamepad1.right_stick_x;  // Turning
-            boolean iny  = gamepad1.a;
 
             // --- 4. Rack tester toggle (Gamepad 1 'B' button) ---
             boolean currentBButtonState = gamepad1.b;
@@ -109,14 +112,21 @@ public class Genius extends LinearOpMode {
             // boot1.setPower(-1);
             // boot2.setPower(1);
             intake.setPower(-.45);
-            if(iny)
-            {
-                kicker.setPosition(0.5); // Kick position
-
+            
+            // Kicker Toggle Logic (Gamepad 1 'A' button)
+            boolean currentAButtonState = gamepad1.a;
+            
+            // Only trigger if 'A' is currently pressed, but wasn't pressed in the last loop
+            if (currentAButtonState && !lastAButtonState) {
+                kickerActive = !kickerActive; // Flip the kicker state
             }
-            else
-            {
-                kicker.setPosition(0.0); // reset position
+            lastAButtonState = currentAButtonState; // Save the state for the next loop iteration
+
+            // Apply the kicker position based on our tracked state
+            if(kickerActive) {
+                kicker.setPosition(0.0); // Kick position
+            } else {
+                kicker.setPosition(0.5); // Reset position
             }
 
             // // --- 9. Read odometry + IMU for telemetry ---
@@ -134,7 +144,7 @@ public class Genius extends LinearOpMode {
             // telemetry.addData("X Inches", "%.2f", -yInches);
             // telemetry.addData("Y Inches", "%.2f", xInches);
             telemetry.addData("Heading (deg)", "%.1f", heading);
-            telemetry.addData("Button A", iny);
+            telemetry.addData("Kicker Active", kickerActive);
             // telemetry.addData("Rack Tester", rackTesterOn ? "ON" : "OFF");
             telemetry.update();
         }
