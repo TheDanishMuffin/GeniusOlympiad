@@ -16,43 +16,39 @@ public class Genius extends LinearOpMode {
 
     static final double COUNTS_PER_INCH = 909.0;
 
+    // --- Intake speed presets ---
+    static final double BALL_SPEED = 0.45;
+    static final double CUBE_SPEED = 0.21;
+
+    // --- Catapult firing parameters ---
+    static final double FIRE_KICK_POWER = 1.0;    // Motor power during fire kick (negative if wrong direction)
+    static final long   FIRE_KICK_TIME_MS = 200;  // Duration of motor kick during fire (milliseconds)
+    static final double WIND_POWER = -1;          // Power used to cock the arm back
+
     @Override
     public void runOpMode() {
         // --- 1. Hardware Mapping ---
-        // Drive motors
         DcMotor frontLeft  = hardwareMap.get(DcMotor.class, "frontLeft");
         DcMotor backLeft   = hardwareMap.get(DcMotor.class, "backLeft");
         DcMotor frontRight = hardwareMap.get(DcMotor.class, "frontRight");
         DcMotor backRight  = hardwareMap.get(DcMotor.class, "backRight");
 
-        // Mechanism motors
         DcMotor intake     = hardwareMap.get(DcMotor.class, "intake");
-        CRServo kicker = hardwareMap.get(CRServo.class, "kicker");
-        DcMotor roller1      = hardwareMap.get(DcMotor.class, "roller1");
-        DcMotor roller2      = hardwareMap.get(DcMotor.class, "roller2");
-        // DcMotor rackTester = hardwareMap.get(DcMotor.class, "rackTester");
-        // DcMotor fly1 = hardwareMap.get(DcMotor.class, "flywheel");
+        Servo kicker1      = hardwareMap.get(Servo.class, "kicker1");
+        Servo kicker2      = hardwareMap.get(Servo.class, "kicker2");
+        DcMotor roller1    = hardwareMap.get(DcMotor.class, "roller1");
+        DcMotor roller2    = hardwareMap.get(DcMotor.class, "roller2");
+        DcMotor catapult   = hardwareMap.get(DcMotor.class, "catapult");
 
-        // Odometry encoders (wired through motor ports)
-        // DcMotor encoderX = hardwareMap.get(DcMotor.class, "encoderX");
-        // DcMotor encoderY = hardwareMap.get(DcMotor.class, "encoderY");
-
-        // IMU
         IMU imu = hardwareMap.get(IMU.class, "imu");
 
-        // --- 2. Motor / Sensor Configuration ---
-        // Reverse the left side so "forward" spins all wheels the same way
+        // --- 2. Configuration ---
         frontLeft.setDirection(DcMotorSimple.Direction.REVERSE);
         backLeft.setDirection(DcMotorSimple.Direction.REVERSE);
-        kicker.setPower(0); //setPosition for 180
 
-        // Reset and free-run the odometry encoders
-        // encoderX.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        // encoderY.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        // encoderX.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        // encoderY.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        kicker1.setPosition(0.5);
+        kicker2.setPosition(0.5);
 
-        // Initialize the IMU
         IMU.Parameters parameters = new IMU.Parameters(
             new RevHubOrientationOnRobot(
                 RevHubOrientationOnRobot.LogoFacingDirection.UP,
@@ -68,86 +64,123 @@ public class Genius extends LinearOpMode {
         waitForStart();
         if (isStopRequested()) return;
 
-        // --- Toggle state tracking for the rack tester ---
-        // boolean rackTesterOn = false;     // Whether the motor should be running
-        boolean lastBButtonState = false; // Button state from the previous loop
-        
-        // --- Toggle state tracking for the kicker ---
-        boolean kickerActive = false;     // Tracks if the kicker should be out
-        boolean lastAButtonState = false; // Tracks the 'A' button state from the previous loop
+        // --- State tracking ---
+        boolean kicker1Active = false;
+        boolean kicker2Active = false;
+        boolean lastAButtonState = false;
+        boolean lastBButtonState = false;
+        boolean lastLeftBumperState = false;
+
+        // Catapult fire state
+        boolean firing = false;
+        long fireStartTime = 0;
+
+        double intakeSpeed = BALL_SPEED;
 
         while (opModeIsActive()) {
-            // --- 3. Read raw joystick inputs ---
-            double rawY  = -gamepad1.left_stick_y;  // Forward/Backward
-            double rawX  = gamepad1.left_stick_x;   // Strafing Left/Right
-            double rawRx = gamepad1.right_stick_x;  // Turning
+            // --- 3. Read inputs ---
+            double rawY  = -gamepad1.left_stick_y;
+            double rawX  = gamepad1.left_stick_x;
+            double rawRx = gamepad1.right_stick_x;
 
-            // --- 4. Rack tester toggle (Gamepad 1 'B' button) ---
-            boolean currentBButtonState = gamepad1.b;
-            // if (currentBButtonState && !lastBButtonState) {
-            //     rackTesterOn = !rackTesterOn; // Flip the state on a fresh press
-            // }
-            // lastBButtonState = currentBButtonState;
-
-            // rackTester.setPower(rackTesterOn ? -1 : 0);
-
-            // --- 5. Cube the inputs for finer control near center ---
             double y  = Math.pow(rawY, 3);
             double x  = Math.pow(rawX, 3);
             double rx = Math.pow(rawRx, 3);
 
-            // --- 6. Mecanum drive math ---
+            // --- 4. Mecanum drive ---
             double denominator = Math.max(Math.abs(y) + Math.abs(x) + Math.abs(rx), 1.0);
             double frontLeftPower  = (y + x + rx) / denominator;
             double backLeftPower   = (y - x + rx) / denominator;
             double frontRightPower = (y - x - rx) / denominator;
             double backRightPower  = (y + x - rx) / denominator;
 
-            // --- 7. Send power to the drive motors ---
             frontLeft.setPower(frontLeftPower);
             backLeft.setPower(backLeftPower);
             frontRight.setPower(frontRightPower);
             backRight.setPower(backRightPower);
 
-            // --- 8. Run the mechanism motors ---
-            //roller1.setPower(.9);
-            //roller2.setPower(.9);
-            intake.setPower(.45); 
-            // do .21 for cubes on full charge and do .45 for balls on full charge
-            
-            // Kicker Toggle Logic (Gamepad 1 'A' button)
+            // --- 5. Roller motors (always on) ---
+            roller1.setPower(.8);
+            roller2.setPower(.8);
+
+            // --- 6. Intake speed selection ---
+            if (gamepad1.y) {
+                intakeSpeed = BALL_SPEED;
+            }
+            if (gamepad1.x) {
+                intakeSpeed = CUBE_SPEED;
+            }
+            intake.setPower(intakeSpeed);
+
+            // --- 7. Kicker 1 toggle (A button) ---
             boolean currentAButtonState = gamepad1.a;
-            
-            // Only trigger if 'A' is currently pressed, but wasn't pressed in the last loop
             if (currentAButtonState && !lastAButtonState) {
-                kickerActive = !kickerActive; // Flip the kicker state
+                kicker1Active = !kicker1Active;
             }
-            lastAButtonState = currentAButtonState; // Save the state for the next loop iteration
+            lastAButtonState = currentAButtonState;
 
-            // Apply the kicker position based on our tracked state
-            if(kickerActive) {
-                kicker.setPower(-1.0); // Kick position
+            kicker1.setPosition(kicker1Active ? 0.0 : 0.5);
+
+            // --- 8. Kicker 2 toggle (B button) ---
+            boolean currentBButtonState = gamepad1.b;
+            if (currentBButtonState && !lastBButtonState) {
+                kicker2Active = !kicker2Active;
+            }
+            lastBButtonState = currentBButtonState;
+
+            kicker2.setPosition(kicker2Active ? 0.0 : 0.5);
+
+            // --- 9. Catapult control ---
+            // RIGHT BUMPER (hold): wind catapult back
+            // LEFT BUMPER (press): fire — motor kick + float
+            
+            boolean currentLeftBumperState = gamepad1.left_bumper;
+            boolean fireTriggered = currentLeftBumperState && !lastLeftBumperState;
+            lastLeftBumperState = currentLeftBumperState;
+
+            if (fireTriggered && !firing) {
+                // Start firing sequence
+                firing = true;
+                fireStartTime = System.currentTimeMillis();
+                catapult.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+            }
+
+            if (firing) {
+                // We're in the middle of a fire sequence
+                long elapsed = System.currentTimeMillis() - fireStartTime;
+                if (elapsed < FIRE_KICK_TIME_MS) {
+                    // Motor kick phase: drive forward to add force
+                    catapult.setPower(FIRE_KICK_POWER);
+                } else {
+                    // Kick phase done: float for rest of swing
+                    catapult.setPower(0);
+                    firing = false;
+                }
+            } else if (gamepad1.right_bumper) {
+                // Winding: cock the arm back
+                catapult.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+                catapult.setPower(-WIND_POWER);  // negative = wind direction (swap sign if wrong)
             } else {
-                kicker.setPower(0.0); // Reset position
+                // Idle: brake holds position
+                catapult.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+                catapult.setPower(0);
             }
 
-            // // --- 9. Read odometry + IMU for telemetry ---
-            // int xPos = encoderX.getCurrentPosition();
-            // int yPos = encoderY.getCurrentPosition();
-            // double xInches = xPos / COUNTS_PER_INCH;
-            // double yInches = yPos / COUNTS_PER_INCH;
-
+            // --- 10. Telemetry ---
             YawPitchRollAngles angles = imu.getRobotYawPitchRollAngles();
             double heading = angles.getYaw(AngleUnit.DEGREES);
 
-            // --- 10. Telemetry ---
-            // telemetry.addData("X Counts", yPos); //swapped x and y here these
-            // telemetry.addData("Y Counts", xPos);
-            // telemetry.addData("X Inches", "%.2f", -yInches);
-            // telemetry.addData("Y Inches", "%.2f", xInches);
             telemetry.addData("Heading (deg)", "%.1f", heading);
-            telemetry.addData("Kicker Active", kickerActive);
-            // telemetry.addData("Rack Tester", rackTesterOn ? "ON" : "OFF");
+            telemetry.addData("Intake Speed", "%.2f", intakeSpeed);
+            telemetry.addData("Intake Mode", intakeSpeed == BALL_SPEED ? "BALLS" : "CUBES");
+            telemetry.addData("Kicker1 (A)", kicker1Active ? "OUT" : "REST");
+            telemetry.addData("Kicker2 (B)", kicker2Active ? "OUT" : "REST");
+            
+            String catState;
+            if (firing) catState = "FIRING (kick)";
+            else if (gamepad1.right_bumper) catState = "WINDING";
+            else catState = "IDLE";
+            telemetry.addData("Catapult", catState);
             telemetry.update();
         }
     }
