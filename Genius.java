@@ -1,14 +1,15 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.IMU;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
-import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 
 @TeleOp(name = "Genius", group = "Linear Opmode")
 public class Genius extends LinearOpMode {
@@ -26,9 +27,9 @@ public class Genius extends LinearOpMode {
 
         // Mechanism motors
         DcMotor intake     = hardwareMap.get(DcMotor.class, "intake");
-        Servo kicker = hardwareMap.get(Servo.class, "kicker");
-        // DcMotor boot1      = hardwareMap.get(DcMotor.class, "boot1");
-        // DcMotor boot2      = hardwareMap.get(DcMotor.class, "boot2");
+        CRServo kicker = hardwareMap.get(CRServo.class, "kicker");
+        DcMotor roller1      = hardwareMap.get(DcMotor.class, "roller1");
+        DcMotor roller2      = hardwareMap.get(DcMotor.class, "roller2");
         // DcMotor rackTester = hardwareMap.get(DcMotor.class, "rackTester");
         // DcMotor fly1 = hardwareMap.get(DcMotor.class, "flywheel");
 
@@ -43,7 +44,7 @@ public class Genius extends LinearOpMode {
         // Reverse the left side so "forward" spins all wheels the same way
         frontLeft.setDirection(DcMotorSimple.Direction.REVERSE);
         backLeft.setDirection(DcMotorSimple.Direction.REVERSE);
-        kicker.setPosition(0.5);
+        kicker.setPower(0); //setPosition for 180
 
         // Reset and free-run the odometry encoders
         // encoderX.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -109,9 +110,10 @@ public class Genius extends LinearOpMode {
             backRight.setPower(backRightPower);
 
             // --- 8. Run the mechanism motors ---
-            // boot1.setPower(-1);
-            // boot2.setPower(1);
-            intake.setPower(-.45);
+            //roller1.setPower(.9);
+            //roller2.setPower(.9);
+            //intake.setPower(.61); 
+            // do .21 for cubes on full charge and do ___ for balls on full charge
             
             // Kicker Toggle Logic (Gamepad 1 'A' button)
             boolean currentAButtonState = gamepad1.a;
@@ -124,9 +126,9 @@ public class Genius extends LinearOpMode {
 
             // Apply the kicker position based on our tracked state
             if(kickerActive) {
-                kicker.setPosition(0.0); // Kick position
+                kicker.setPower(1.0); // Kick position
             } else {
-                kicker.setPosition(0.5); // Reset position
+                kicker.setPower(0.0); // Reset position
             }
 
             // // --- 9. Read odometry + IMU for telemetry ---
