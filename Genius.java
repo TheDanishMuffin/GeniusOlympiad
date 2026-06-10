@@ -112,8 +112,8 @@ public class Genius extends LinearOpMode {
             // --- 8. Run the mechanism motors ---
             //roller1.setPower(.9);
             //roller2.setPower(.9);
-            //intake.setPower(.61); 
-            // do .21 for cubes on full charge and do ___ for balls on full charge
+            intake.setPower(.45); 
+            // do .21 for cubes on full charge and do .45 for balls on full charge
             
             // Kicker Toggle Logic (Gamepad 1 'A' button)
             boolean currentAButtonState = gamepad1.a;
@@ -126,7 +126,7 @@ public class Genius extends LinearOpMode {
 
             // Apply the kicker position based on our tracked state
             if(kickerActive) {
-                kicker.setPower(1.0); // Kick position
+                kicker.setPower(-1.0); // Kick position
             } else {
                 kicker.setPower(0.0); // Reset position
             }
